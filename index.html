@@ -1,0 +1,115 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="File Viewer">
+  <title>File Viewer Pro</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Additional Android-specific styles */
+    .android-fallback {
+      display: none;
+      background: var(--bg-elevated);
+      border-radius: 12px;
+      padding: 12px;
+      margin: 8px 0;
+    }
+    .android-fallback .file-input-wrapper {
+      margin: 6px 0;
+    }
+    .android-fallback input[type="file"] {
+      width: 100%;
+      padding: 8px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-primary);
+    }
+    @media (max-width: 720px) {
+      .android-fallback {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Top Bar -->
+    <header class="app-header">
+      <button id="menuToggle" class="hamburger" aria-label="Toggle sidebar">☰</button>
+      <span id="headerTitle">File Viewer</span>
+      <div class="header-actions">
+        <button id="themeToggle" aria-label="Toggle theme">🌙</button>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="main-container">
+      <!-- Sidebar -->
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-inner">
+          <div class="picker-group">
+            <label for="folderPicker" class="picker-label">📁 Select Folder</label>
+            <input type="file" id="folderPicker" webkitdirectory directory multiple>
+          </div>
+          <div class="picker-group">
+            <label for="filePicker" class="picker-label">📄 Select File(s)</label>
+            <input type="file" id="filePicker" multiple accept="*/*">
+          </div>
+          
+          <!-- Android Fallback (for devices where webkitdirectory doesn't work) -->
+          <div class="android-fallback" id="androidFallback">
+            <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:8px;">
+              📱 Android mode: Select files individually
+            </p>
+            <div class="file-input-wrapper">
+              <input type="file" id="androidFilePicker" multiple accept="*/*">
+            </div>
+          </div>
+          
+          <div id="fileList" class="file-list">
+            <p class="placeholder">No files loaded</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Viewer -->
+      <main class="viewer">
+        <div class="viewer-header">
+          <span id="fileName">No file selected</span>
+          <span id="fileSize" class="file-meta"></span>
+        </div>
+        <div id="codeContent" class="code-content">
+          <div class="empty-state">📂 Select a file to preview</div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+
+  <script>
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker
+            .register("./service-worker.js")
+            .then(() => {
+                console.log("Service Worker Registered");
+            })
+            .catch((error) => {
+                console.log("Service Worker Registration Failed:", error);
+            });
+    });
+}
+</script>
+</body>
+</html>
