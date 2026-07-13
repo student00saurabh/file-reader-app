@@ -1,4 +1,4 @@
-// script.js – Complete file viewer with all file type support (FIXED PDF)
+// script.js – Complete file viewer with ALL file types opening inside app
 (function() {
   "use strict";
 
@@ -40,16 +40,9 @@
   const xlsExtensions = ['.xls','.xlsx','.ods'];
   const zipExtensions = ['.zip','.rar','.7z','.tar','.gz'];
 
-  const allSupported = [
-    ...textExtensions, ...imageExtensions, ...videoExtensions, 
-    ...audioExtensions, ...pdfExtensions, ...docExtensions, 
-    ...pptExtensions, ...xlsExtensions, ...zipExtensions
-  ];
-
   // ----- File Type Detection -----
   function getFileType(file) {
     const fullName = file.name.toLowerCase();
-    
     if (imageExtensions.some(e => fullName.endsWith(e))) return 'image';
     if (videoExtensions.some(e => fullName.endsWith(e))) return 'video';
     if (audioExtensions.some(e => fullName.endsWith(e))) return 'audio';
@@ -94,7 +87,12 @@
   }
 
   function isSupported(file) {
-    return allSupported.some(ext => file.name.toLowerCase().endsWith(ext));
+    const allExts = [
+      ...textExtensions, ...imageExtensions, ...videoExtensions, 
+      ...audioExtensions, ...pdfExtensions, ...docExtensions, 
+      ...pptExtensions, ...xlsExtensions, ...zipExtensions
+    ];
+    return allExts.some(e => file.name.toLowerCase().endsWith(e));
   }
 
   function formatSize(bytes) {
@@ -284,9 +282,103 @@
     fileStats.textContent = `${filtered.length} files loaded`;
   }
 
-  // ----- DOWNLOAD FILE FUNCTION -----
-  function downloadFile(data, filename) {
-    // Create a blob from data URL
+  // ----- Helper: Convert data URL to Blob URL -----
+  function dataURLToBlobURL(dataUrl) {
+    return fetch(dataUrl)
+      .then(res => res.blob())
+      .then(blob => URL.createObjectURL(blob));
+  }
+
+  // ----- Helper: Show Office Document using multiple viewers -----
+  function showOfficeDocument(file, dataUrl, fileType) {
+    const fileTypeMap = {
+      'doc': { icon: '📝', label: 'Document' },
+      'ppt': { icon: '📊', label: 'Presentation' },
+      'xls': { icon: '📈', label: 'Spreadsheet' }
+    };
+    
+    const info = fileTypeMap[fileType] || { icon: '📎', label: 'File' };
+    
+    // Try to convert to blob URL and use viewers
+    dataURLToBlobURL(dataUrl)
+      .then(blobUrl => {
+        // Try Google Docs Viewer first (more reliable)
+        const googleViewer = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(blobUrl)}`;
+        
+        // Try Microsoft Office Viewer as fallback
+        const msViewer = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(blobUrl)}`;
+        
+        // Create viewer with both options
+        codeContent.innerHTML = `
+          <div style="width:100%;height:100%;background:#f0f0f0;display:flex;flex-direction:column;padding:10px;">
+            <div style="display:flex;gap:10px;padding:8px;background:var(--bg-secondary);border-radius:8px;margin-bottom:8px;flex-wrap:wrap;">
+              <button id="viewerGoogleBtn" style="padding:6px 16px;background:var(--accent);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.8rem;">Google Viewer</button>
+              <button id="viewerMsBtn" style="padding:6px 16px;background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border-color);border-radius:6px;cursor:pointer;font-size:0.8rem;">Microsoft Viewer</button>
+              <button id="viewerDownloadBtn" style="padding:6px 16px;background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border-color);border-radius:6px;cursor:pointer;font-size:0.8rem;">📥 Download</button>
+            </div>
+            <div id="officeViewerFrame" style="flex:1;border-radius:8px;overflow:hidden;background:white;">
+              <iframe src="${googleViewer}" style="width:100%;height:100%;border:none;" allow="fullscreen"></iframe>
+            </div>
+          </div>
+        `;
+        
+        // Add button functionality
+        const googleBtn = document.getElementById('viewerGoogleBtn');
+        const msBtn = document.getElementById('viewerMsBtn');
+        const downloadBtn = document.getElementById('viewerDownloadBtn');
+        const frame = document.querySelector('#officeViewerFrame iframe');
+        
+        if (googleBtn) {
+          googleBtn.addEventListener('click', () => {
+            frame.src = googleViewer;
+            googleBtn.style.background = 'var(--accent)';
+            googleBtn.style.color = 'white';
+            msBtn.style.background = 'var(--bg-elevated)';
+            msBtn.style.color = 'var(--text-primary)';
+          });
+        }
+        
+        if (msBtn) {
+          msBtn.addEventListener('click', () => {
+            frame.src = msViewer;
+            msBtn.style.background = 'var(--accent)';
+            msBtn.style.color = 'white';
+            googleBtn.style.background = 'var(--bg-elevated)';
+            googleBtn.style.color = 'var(--text-primary)';
+          });
+        }
+        
+        if (downloadBtn) {
+          downloadBtn.addEventListener('click', () => {
+            window.downloadFileDirect(dataUrl, file.name);
+          });
+        }
+      })
+      .catch(() => {
+        // Fallback: Show download option
+        showDownloadOption(file, dataUrl, info);
+      });
+  }
+
+  // ----- Helper: Show Download Option -----
+  function showDownloadOption(file, dataUrl, info) {
+    codeContent.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:40px;gap:15px;background:var(--bg-primary);text-align:center;">
+        <div style="font-size:4rem;">${info.icon}</div>
+        <div style="font-size:1.3rem;font-weight:600;color:var(--text-primary);">${file.name}</div>
+        <div style="color:var(--text-secondary);">${info.label} File (${formatSize(file.size)})</div>
+        <div style="color:var(--text-secondary);font-size:0.9rem;max-width:400px;">
+          Preview not available. Please download to view.
+        </div>
+        <button onclick="window.downloadFileDirect('${dataUrl}', '${file.name}')" style="padding:10px 24px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.95rem;font-weight:500;">
+          📥 Download File
+        </button>
+      </div>
+    `;
+  }
+
+  // ----- Direct Download Function (Global) -----
+  window.downloadFileDirect = function(data, filename) {
     fetch(data)
       .then(res => res.blob())
       .then(blob => {
@@ -297,10 +389,9 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
       })
       .catch(() => {
-        // Fallback for older browsers
         const link = document.createElement('a');
         link.href = data;
         link.download = filename;
@@ -308,12 +399,9 @@
         link.click();
         document.body.removeChild(link);
       });
-  }
+  };
 
-  // Make downloadFile globally accessible
-  window.downloadFile = downloadFile;
-
-  // ----- OPEN FILE - COMPLETE FIX FOR ALL TYPES -----
+  // ----- OPEN FILE - ALL TYPES INSIDE APP -----
   function openFile(file) {
     if (!file) return;
     selectedFile = file;
@@ -321,7 +409,6 @@
     fileName.textContent = fileNameDisplay;
     fileSize.textContent = formatSize(file.size);
     
-    // Update badge
     const badgeText = getBadgeText(file);
     const badgeClass = getBadgeClass(file);
     fileTypeBadge.textContent = badgeText;
@@ -350,7 +437,7 @@
         codeContent.innerHTML = `
           <div style="display:flex;align-items:center;justify-content:center;height:100%;padding:20px;background:#000;">
             <video controls style="max-width:100%;max-height:85vh;border-radius:12px;">
-              <source src="${e.target.result}" type="video/mp4">
+              <source src="${e.target.result}">
               Your browser does not support the video tag.
             </video>
           </div>
@@ -369,7 +456,7 @@
             <div style="font-size:4rem;">🎵</div>
             <div style="font-size:1.2rem;font-weight:500;color:var(--text-primary);">${file.name}</div>
             <audio controls style="width:100%;max-width:500px;">
-              <source src="${e.target.result}" type="audio/mpeg">
+              <source src="${e.target.result}">
               Your browser does not support the audio tag.
             </audio>
           </div>
@@ -379,95 +466,31 @@
       return;
     }
 
-    // ---- PDF - FIXED: Using blob URL instead of data URL ----
+    // ---- PDF ----
     if (fileType === 'pdf') {
       const reader = new FileReader();
       reader.onload = (e) => {
         const dataUrl = e.target.result;
-        // Convert data URL to blob URL for better PDF support
-        fetch(dataUrl)
-          .then(res => res.blob())
-          .then(blob => {
-            const blobUrl = URL.createObjectURL(blob);
-            codeContent.innerHTML = `
-              <div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;padding:10px;">
-                <iframe src="${blobUrl}" style="width:100%;height:100%;border:none;border-radius:8px;background:white;" allow="fullscreen"></iframe>
-              </div>
-            `;
-          })
-          .catch(() => {
-            // Fallback: try with data URL
-            codeContent.innerHTML = `
-              <div style="width:100%;height:100%;background:#f0f0f0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;gap:15px;">
-                <div style="font-size:4rem;">📄</div>
-                <div style="font-size:1.2rem;font-weight:600;">${file.name}</div>
-                <div style="color:var(--text-secondary);">PDF cannot be previewed in this browser</div>
-                <button onclick="downloadFile('${dataUrl}', '${file.name}')" style="padding:10px 24px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.95rem;font-weight:500;">
-                  📥 Download PDF
-                </button>
-              </div>
-            `;
-          });
+        dataURLToBlobURL(dataUrl).then(blobUrl => {
+          codeContent.innerHTML = `
+            <div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;padding:10px;">
+              <iframe src="${blobUrl}" style="width:100%;height:100%;border:none;border-radius:8px;background:white;" allow="fullscreen"></iframe>
+            </div>
+          `;
+        }).catch(() => {
+          showDownloadOption(file, dataUrl, { icon: '📄', label: 'PDF' });
+        });
       };
       reader.readAsDataURL(file);
       return;
     }
 
-    // ---- DOC, DOCX, ODT, RTF ----
-    if (fileType === 'doc') {
+    // ---- WORD, EXCEL, PPT - Using Dual Viewer ----
+    if (['doc', 'ppt', 'xls'].includes(fileType)) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        const data = e.target.result;
-        codeContent.innerHTML = `
-          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:40px;gap:15px;background:var(--bg-primary);text-align:center;">
-            <div style="font-size:4rem;">📝</div>
-            <div style="font-size:1.3rem;font-weight:600;color:var(--text-primary);">${file.name}</div>
-            <div style="color:var(--text-secondary);">Document File (${formatSize(file.size)})</div>
-            <button onclick="downloadFile('${data}', '${file.name}')" style="padding:10px 24px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.95rem;font-weight:500;">
-              📥 Download File
-            </button>
-          </div>
-        `;
-      };
-      reader.readAsDataURL(file);
-      return;
-    }
-
-    // ---- PPT, PPTX, ODP ----
-    if (fileType === 'ppt') {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const data = e.target.result;
-        codeContent.innerHTML = `
-          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:40px;gap:15px;background:var(--bg-primary);text-align:center;">
-            <div style="font-size:4rem;">📊</div>
-            <div style="font-size:1.3rem;font-weight:600;color:var(--text-primary);">${file.name}</div>
-            <div style="color:var(--text-secondary);">Presentation File (${formatSize(file.size)})</div>
-            <button onclick="downloadFile('${data}', '${file.name}')" style="padding:10px 24px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.95rem;font-weight:500;">
-              📥 Download File
-            </button>
-          </div>
-        `;
-      };
-      reader.readAsDataURL(file);
-      return;
-    }
-
-    // ---- XLS, XLSX, ODS ----
-    if (fileType === 'xls') {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const data = e.target.result;
-        codeContent.innerHTML = `
-          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:40px;gap:15px;background:var(--bg-primary);text-align:center;">
-            <div style="font-size:4rem;">📈</div>
-            <div style="font-size:1.3rem;font-weight:600;color:var(--text-primary);">${file.name}</div>
-            <div style="color:var(--text-secondary);">Spreadsheet File (${formatSize(file.size)})</div>
-            <button onclick="downloadFile('${data}', '${file.name}')" style="padding:10px 24px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.95rem;font-weight:500;">
-              📥 Download File
-            </button>
-          </div>
-        `;
+        const dataUrl = e.target.result;
+        showOfficeDocument(file, dataUrl, fileType);
       };
       reader.readAsDataURL(file);
       return;
@@ -483,7 +506,7 @@
             <div style="font-size:4rem;">📦</div>
             <div style="font-size:1.5rem;font-weight:600;color:var(--text-primary);">${file.name}</div>
             <div style="color:var(--text-secondary);">Archive File (${formatSize(file.size)})</div>
-            <button onclick="downloadFile('${data}', '${file.name}')" style="padding:10px 24px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.95rem;font-weight:500;">
+            <button onclick="window.downloadFileDirect('${data}', '${file.name}')" style="padding:10px 24px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.95rem;font-weight:500;">
               📥 Download Archive
             </button>
           </div>
@@ -619,30 +642,117 @@
     <div class="empty-state">
       <div class="big-icon">📂</div>
       <div>Select a file to preview</div>
-      <div style="font-size:0.8rem;opacity:0.6;">Supports all file types: PDF, DOC, PPT, Images, Videos, Audio & more</div>
+      <div style="font-size:0.8rem;opacity:0.6;">Supports: PDF, DOC, PPT, XLS, Images, Videos, Audio & more</div>
     </div>
   `;
   fileList.innerHTML = `<p class="placeholder">📁 Select a folder or files to get started</p>`;
   fileStats.textContent = '0 files';
 
   console.log('📂 File Viewer Pro ready!');
-  console.log('Supported file types:', allSupported.length);
+  console.log('✅ All files will open inside the app');
 
-  // ----- Download APK Functionality -----
+  // ----- DIRECT APK DOWNLOAD (No PWA, No Browser) -----
   (function() {
     const downloadBtn = document.getElementById('downloadApkBtn');
     const downloadModal = document.getElementById('downloadModal');
     const modalCloseBtn = document.getElementById('modalCloseBtn');
     const directDownloadLink = document.getElementById('directDownloadLink');
+    
+    // APK file path - Direct download link
+    const APK_FILE_PATH = 'CodeReader.apk';
 
+    // Function to download APK directly
+    function downloadAPK() {
+      // Create an invisible anchor tag
+      const link = document.createElement('a');
+      link.href = APK_FILE_PATH;
+      link.download = 'CodeReader.apk';
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      
+      // Trigger download
+      link.click();
+      
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(link);
+      }, 1000);
+      
+      console.log('📱 APK Download started');
+    }
+
+    // Check if APK exists before showing modal
+    function checkAPKExists() {
+      fetch(APK_FILE_PATH, { method: 'HEAD' })
+        .then(response => {
+          if (response.ok) {
+            // APK exists - Enable direct download
+            if (directDownloadLink) {
+              directDownloadLink.href = '#';
+              directDownloadLink.textContent = '⬇️ Download APK';
+              directDownloadLink.onclick = function(e) {
+                e.preventDefault();
+                downloadAPK();
+                closeModal();
+              };
+            }
+            console.log('✅ APK file found');
+          } else {
+            // APK not found - Show alternative
+            if (directDownloadLink) {
+              directDownloadLink.href = '#';
+              directDownloadLink.textContent = '🔗 Generate APK Online';
+              directDownloadLink.onclick = function(e) {
+                e.preventDefault();
+                window.open('https://www.pwabuilder.com', '_blank');
+                closeModal();
+              };
+            }
+            console.log('⚠️ APK file not found');
+          }
+        })
+        .catch(() => {
+          // Fetch failed - Show alternative
+          if (directDownloadLink) {
+            directDownloadLink.href = '#';
+            directDownloadLink.textContent = '🔗 Generate APK Online';
+            directDownloadLink.onclick = function(e) {
+              e.preventDefault();
+              window.open('https://www.pwabuilder.com', '_blank');
+              closeModal();
+            };
+          }
+          console.log('⚠️ APK fetch failed');
+        });
+    }
+
+    // Show modal on download button click
     if (downloadBtn) {
       downloadBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        downloadModal.classList.add('active');
+        
+        // First try to download directly (if APK exists)
+        fetch(APK_FILE_PATH, { method: 'HEAD' })
+          .then(response => {
+            if (response.ok) {
+              // APK exists - Download directly without modal
+              downloadAPK();
+            } else {
+              // APK not found - Show modal with options
+              downloadModal.classList.add('active');
+              checkAPKExists();
+            }
+          })
+          .catch(() => {
+            // Show modal with options
+            downloadModal.classList.add('active');
+            checkAPKExists();
+          });
       });
     }
 
+    // Close modal
     function closeModal() {
       downloadModal.classList.remove('active');
     }
@@ -663,30 +773,7 @@
       }
     });
 
-    // Check if APK exists
-    fetch('CodeReader.apk')
-      .then(response => {
-        if (response.ok) {
-          directDownloadLink.href = 'CodeReader.apk';
-          directDownloadLink.textContent = '⬇️ Download APK';
-        } else {
-          directDownloadLink.href = '#';
-          directDownloadLink.textContent = '🔗 Get APK from PWA Builder';
-          directDownloadLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            window.open('https://www.pwabuilder.com', '_blank');
-          });
-        }
-      })
-      .catch(() => {
-        directDownloadLink.href = '#';
-        directDownloadLink.textContent = '🔗 Generate APK Online';
-        directDownloadLink.addEventListener('click', (e) => {
-          e.preventDefault();
-          window.open('https://www.pwabuilder.com', '_blank');
-        });
-      });
-
-    console.log('📱 Download APK feature added!');
+    console.log('📱 Direct APK Download feature added!');
   })();
+
 })();
