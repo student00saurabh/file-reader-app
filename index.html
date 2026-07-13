@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <h1>Hello</h1>
   <div id="app">
     <!-- Top Bar -->
     <header class="app-header">
@@ -58,14 +59,15 @@
           </div>
           
           <!-- Android Fallback -->
-          <div class="android-fallback" id="androidFallback">
+          <!-- <div class="android-fallback" id="androidFallback">
             <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:8px;">
               📱 Android mode: Select files individually
             </p>
             <div class="file-input-wrapper">
-              <input type="file" id="androidFilePicker" multiple accept="*/*">
+              <label for="androidFilePicker">Select File if above selectors are not working</label>
+              <input type="file" name="androidFilePicker" id="androidFilePicker" multiple accept="*/*">
             </div>
-          </div>
+          </div> -->
           
           <div id="fileStats" style="font-size:0.75rem;color:var(--text-secondary);padding:4px 0;margin-bottom:8px;"></div>
           <div id="fileList" class="file-list">
