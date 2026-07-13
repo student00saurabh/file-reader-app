@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,48 +6,37 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="File Viewer">
-  <title>File Viewer Pro</title>
+  <meta name="apple-mobile-web-app-title" content="CodeReader Pro">
+  <title>CodeReader Pro</title>
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/android-chrome-192x192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/android-chrome-512x512.png">
   <link rel="stylesheet" href="style.css">
-  <style>
-    /* Additional Android-specific styles */
-    .android-fallback {
-      display: none;
-      background: var(--bg-elevated);
-      border-radius: 12px;
-      padding: 12px;
-      margin: 8px 0;
-    }
-    .android-fallback .file-input-wrapper {
-      margin: 6px 0;
-    }
-    .android-fallback input[type="file"] {
-      width: 100%;
-      padding: 8px;
-      background: var(--bg-input);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      color: var(--text-primary);
-    }
-    @media (max-width: 720px) {
-      .android-fallback {
-        display: block;
-      }
-    }
-  </style>
 </head>
 <body>
   <div id="app">
     <!-- Top Bar -->
     <header class="app-header">
       <button id="menuToggle" class="hamburger" aria-label="Toggle sidebar">☰</button>
-      <span id="headerTitle">File Viewer</span>
+      
+      <!-- Logo -->
+      <a href="#" class="app-logo" id="appLogo">
+        <img src="icons/logo.png" alt="CodeReader" id="logoImg" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+        <span style="display:inline;">CodeReader</span>
+        <span style="display:none;font-size:1.5rem;">📁</span>
+      </a>
+      
+      <div style="flex:1;"></div>
+      
       <div class="header-actions">
+        <!-- Download APK Button -->
+        <button id="downloadApkBtn" class="download-apk-btn" title="Download APK">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M5 20h14v-2H5v2zm7-18L5.33 9h3.84v4h3.66V9h3.84L12 2z" transform="rotate(180,12,12)" fill="white"/></svg>
+          <span>APK</span>
+        </button>
         <button id="themeToggle" aria-label="Toggle theme">🌙</button>
+        <button id="fullscreenToggle" aria-label="Fullscreen" style="background:transparent;border:none;color:var(--text-primary);font-size:20px;cursor:pointer;">⛶</button>
       </div>
     </header>
 
@@ -57,6 +45,9 @@
       <!-- Sidebar -->
       <aside id="sidebar" class="sidebar">
         <div class="sidebar-inner">
+          <div class="search-box">
+            <input type="text" id="fileSearch" placeholder="🔍 Search files...">
+          </div>
           <div class="picker-group">
             <label for="folderPicker" class="picker-label">📁 Select Folder</label>
             <input type="file" id="folderPicker" webkitdirectory directory multiple>
@@ -66,7 +57,7 @@
             <input type="file" id="filePicker" multiple accept="*/*">
           </div>
           
-          <!-- Android Fallback (for devices where webkitdirectory doesn't work) -->
+          <!-- Android Fallback -->
           <div class="android-fallback" id="androidFallback">
             <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:8px;">
               📱 Android mode: Select files individually
@@ -76,6 +67,7 @@
             </div>
           </div>
           
+          <div id="fileStats" style="font-size:0.75rem;color:var(--text-secondary);padding:4px 0;margin-bottom:8px;"></div>
           <div id="fileList" class="file-list">
             <p class="placeholder">No files loaded</p>
           </div>
@@ -87,6 +79,7 @@
         <div class="viewer-header">
           <span id="fileName">No file selected</span>
           <span id="fileSize" class="file-meta"></span>
+          <span id="fileTypeBadge" class="file-type-badge badge-other">Unknown</span>
         </div>
         <div id="codeContent" class="code-content">
           <div class="empty-state">📂 Select a file to preview</div>
@@ -95,21 +88,32 @@
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <!-- Download Modal -->
+  <div id="downloadModal" class="download-modal">
+    <div class="download-modal-content">
+      <div class="modal-icon">📱</div>
+      <h2>Download CodeReader APK</h2>
+      <p>Get the offline Android app for a better experience. Supports all file types: PDF, DOC, PPT, Images, Videos & more!</p>
+      <div class="btn-group">
+        <a href="#" id="directDownloadLink" class="btn-primary" download>⬇️ Download APK</a>
+        <button id="modalCloseBtn" class="btn-secondary">Close</button>
+      </div>
+      <div style="margin-top:12px;font-size:0.7rem;color:var(--text-secondary);text-align:center;">
+        Version 2.0 • Size: ~4.5 MB • Works offline
+      </div>
+    </div>
+  </div>
 
+  <script src="script.js"></script>
   <script>
-if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
         navigator.serviceWorker
-            .register("./service-worker.js")
-            .then(() => {
-                console.log("Service Worker Registered");
-            })
-            .catch((error) => {
-                console.log("Service Worker Registration Failed:", error);
-            });
-    });
-}
-</script>
+          .register("./service-worker.js")
+          .then(() => console.log("Service Worker Registered"))
+          .catch((error) => console.log("Service Worker Registration Failed:", error));
+      });
+    }
+  </script>
 </body>
 </html>

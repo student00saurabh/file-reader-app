@@ -1,413 +1,222 @@
-/* style.css – offline-first, mobile-optimized, dark/light theme */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, monospace;
-}
+/* Add these styles at the end of your style.css file */
 
-:root {
-  --bg-primary: #0f0f11;
-  --bg-secondary: #1a1a1e;
-  --bg-elevated: #26262b;
-  --bg-input: #2c2c32;
-  --text-primary: #e4e4e7;
-  --text-secondary: #a0a0ab;
-  --border-color: #2e2e35;
-  --accent: #6c8cff;
-  --shadow: 0 8px 24px rgba(0,0,0,0.6);
-  --radius: 14px;
-  --transition: 0.25s ease;
-  --line-number-color: #5a5a6e;
-  --code-bg: #0f0f11;
-  --line-hover: #1e1e22;
-}
-
-body.light {
-  --bg-primary: #f5f5f7;
-  --bg-secondary: #ffffff;
-  --bg-elevated: #eaeaee;
-  --bg-input: #dcdce0;
-  --text-primary: #1c1c1e;
-  --text-secondary: #3a3a3e;
-  --border-color: #c6c6cc;
-  --shadow: 0 6px 20px rgba(0,0,0,0.08);
-  --accent: #3b5bdb;
-  --line-number-color: #8a8a9e;
-  --code-bg: #f5f5f7;
-  --line-hover: #eaeaee;
-}
-
-html, body {
-  height: 100%;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  overflow: hidden;
-  -webkit-tap-highlight-color: transparent;
-  margin-bottom: 10px !important;
-}
-
-#app {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  max-width: 100vw;
-  background: var(--bg-primary);
-}
-
-/* Header */
-.app-header {
-  display: flex;
-  align-items: center;
-  padding: 10px 16px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0;
-  gap: 12px;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  z-index: 10;
-}
-
-.hamburger {
-  background: transparent;
-  border: none;
-  color: var(--text-primary);
-  font-size: 26px;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 10px;
-  transition: background var(--transition);
-  line-height: 1;
-}
-
-.hamburger:hover, .hamburger:active {
+/* Android fallback styles */
+.android-fallback {
+  display: none;
   background: var(--bg-elevated);
+  border-radius: 12px;
+  padding: 12px;
+  margin: 8px 0;
 }
-
-#headerTitle {
-  font-weight: 600;
-  font-size: 1.1rem;
-  letter-spacing: -0.3px;
-  flex: 1;
+.android-fallback .file-input-wrapper {
+  margin: 6px 0;
 }
-
-.header-actions {
-  display: flex;
-  gap: 8px;
-}
-
-#themeToggle {
-  background: transparent;
-  border: none;
-  color: var(--text-primary);
-  font-size: 22px;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 10px;
-  transition: background var(--transition);
-}
-
-#themeToggle:hover {
-  background: var(--bg-elevated);
-}
-
-/* Main container */
-.main-container {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  position: relative;
-}
-
-/* Sidebar (mobile-first) */
-.sidebar {
-  position: absolute;
-  top: 0;
-  left: -320px;
-  width: 290px;
-  height: 100%;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border-color);
-  transition: left var(--transition);
-  z-index: 20;
-  box-shadow: var(--shadow);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.sidebar.open {
-  left: 0;
-}
-
-.sidebar-inner {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  padding: 16px 14px;
-  overflow: hidden;
-}
-
-.picker-group {
-  margin-bottom: 14px;
-}
-
-.picker-label {
-  display: block;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-  font-weight: 600;
-}
-
-input[type="file"] {
-  display: block;
+.android-fallback input[type="file"] {
   width: 100%;
-  padding: 10px 8px;
+  padding: 8px;
   background: var(--bg-input);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  color: var(--text-primary);
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: border var(--transition);
-}
-
-input[type="file"]:hover {
-  border-color: var(--accent);
-}
-
-input[type="file"]::file-selector-button {
-  background: var(--bg-elevated);
-  border: none;
-  padding: 6px 14px;
   border-radius: 8px;
   color: var(--text-primary);
-  font-weight: 500;
-  margin-right: 10px;
-  cursor: pointer;
-  transition: background var(--transition);
 }
 
-input[type="file"]::file-selector-button:hover {
-  background: var(--accent);
-  color: #fff;
+@media (max-width: 720px) {
+  .android-fallback {
+    display: block;
+  }
 }
 
-.file-list {
-  flex: 1;
-  overflow-y: auto;
-  margin-top: 8px;
-  padding-right: 4px;
+/* Download modal styles */
+.download-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
 }
-
-.file-list::-webkit-scrollbar {
-  width: 4px;
+.download-modal.active {
+  display: flex;
 }
-.file-list::-webkit-scrollbar-track {
-  background: transparent;
+.download-modal-content {
+  background: var(--bg-secondary);
+  border-radius: 20px;
+  padding: 32px;
+  max-width: 420px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  border: 1px solid var(--border-color);
+  animation: modalIn 0.3s ease;
 }
-.file-list::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 10px;
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.9) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
-
-.placeholder {
+.download-modal-content h2 {
+  margin-bottom: 8px;
+  font-size: 1.3rem;
+  color: var(--text-primary);
+}
+.download-modal-content p {
   color: var(--text-secondary);
   font-size: 0.9rem;
-  padding: 16px 0;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+.download-modal-content .btn-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.download-modal-content .btn-group a,
+.download-modal-content .btn-group button {
+  flex: 1;
+  min-width: 100px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
   text-align: center;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+  transform: translateY(-2px);
+}
+.btn-secondary {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+.btn-secondary:hover {
+  background: var(--bg-input);
+}
+.modal-icon {
+  font-size: 3rem;
+  text-align: center;
+  margin-bottom: 12px;
 }
 
-/* Tree items */
-.folder-item, .file-item {
-  padding: 7px 10px;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: background 0.15s;
+/* Logo styles */
+.app-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text-primary);
+}
+.app-logo img {
+  height: 32px;
+  width: 32px;
+  border-radius: 6px;
+  object-fit: contain;
+}
+.app-logo span {
+  font-weight: 600;
+  font-size: 1.05rem;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 0.92rem;
+}
+
+/* Download APK Button */
+.download-apk-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.download-apk-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 12px rgba(108, 140, 255, 0.4);
+}
+.download-apk-btn:active {
+  transform: scale(0.95);
+}
+.download-apk-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .app-logo span {
+    display: none;
+  }
+  .app-logo img {
+    height: 28px;
+    width: 28px;
+  }
+  .download-apk-btn span {
+    display: none;
+  }
+  .download-apk-btn {
+    padding: 4px 8px;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    justify-content: center;
+  }
+  .download-apk-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+  .download-modal-content {
+    padding: 24px 20px;
+    margin: 10px;
+  }
+  .download-modal-content h2 {
+    font-size: 1.1rem;
+  }
+  .download-modal-content .btn-group a,
+  .download-modal-content .btn-group button {
+    min-width: 80px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Header actions */
+.header-actions {
   display: flex;
   align-items: center;
   gap: 6px;
 }
 
-.folder-item:hover, .file-item:hover {
-  background: var(--bg-elevated);
-}
-
-.folder-item {
-  color: #b0b8ff;
-  font-weight: 500;
-}
-
-.file-item {
+/* Sidebar search */
+.search-box input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
   color: var(--text-primary);
-}
-
-.folder-item .arrow {
-  display: inline-block;
-  transition: transform 0.2s;
-  font-size: 0.7rem;
-  margin-right: 4px;
-}
-.folder-item.open .arrow {
-  transform: rotate(90deg);
-}
-
-.children {
-  overflow: hidden;
-  transition: max-height 0.2s ease;
-}
-
-/* Viewer */
-.viewer {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-primary);
-  min-width: 0;
-}
-
-.viewer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 16px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
-  flex-shrink: 0;
-  gap: 8px;
-}
-
-#fileName {
-  font-weight: 500;
-  font-size: 0.95rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.file-meta {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
-.code-content {
-  flex: 1;
-  overflow: auto;
-  padding: 12px 0;
-  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
   font-size: 0.85rem;
-  line-height: 1.6;
-  background: var(--code-bg);
-  color: var(--text-primary);
-  position: relative;
+  outline: none;
+  transition: border var(--transition);
 }
-
-.code-content .line-container {
-  display: flex;
-  padding: 0 16px;
-  min-height: 1.6em;
-  transition: background 0.1s;
-}
-
-.code-content .line-container:hover {
-  background: var(--line-hover);
-}
-
-.code-content .line-number {
-  display: inline-block;
-  min-width: 50px;
-  text-align: right;
-  padding-right: 16px;
-  color: var(--line-number-color);
-  user-select: none;
-  flex-shrink: 0;
-  font-size: 0.8rem;
-  opacity: 0.7;
-}
-
-.code-content .line-content {
-  display: inline-block;
-  white-space: pre;
-  padding-right: 20px;
-  min-width: max-content;
-}
-
-.code-content .empty-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: var(--text-secondary);
-  font-size: 1.1rem;
-  font-family: system-ui;
-  opacity: 0.6;
-}
-
-/* image preview */
-.code-content img {
-  max-width: 100%;
-  max-height: 80vh;
-  object-fit: contain;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  margin: 8px 16px;
-}
-
-/* mobile overrides */
-@media (min-width: 720px) {
-  .sidebar {
-    position: relative;
-    left: 0 !important;
-    width: 300px;
-    box-shadow: none;
-    border-right: 1px solid var(--border-color);
-    flex-shrink: 0;
-  }
-  .hamburger {
-    display: none;
-  }
-  .main-container {
-    overflow: hidden;
-  }
-  .sidebar-inner {
-    padding: 20px 16px;
-  }
-}
-
-/* small touch */
-@media (max-width: 480px) {
-  .app-header {
-    padding: 8px 12px;
-  }
-  #headerTitle {
-    font-size: 1rem;
-  }
-  .viewer-header {
-    padding: 8px 12px;
-  }
-  .code-content {
-    padding: 8px 0;
-    font-size: 0.8rem;
-  }
-  .code-content .line-container {
-    padding: 0 8px;
-  }
-  .code-content .line-number {
-    min-width: 35px;
-    padding-right: 10px;
-    font-size: 0.7rem;
-  }
-  .folder-item, .file-item {
-    font-size: 0.85rem;
-    padding: 6px 8px;
-  }
+.search-box input:focus {
+  border-color: var(--accent);
 }
