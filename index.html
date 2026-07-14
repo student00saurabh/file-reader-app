@@ -13,147 +13,25 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icons/android-chrome-192x192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="icons/android-chrome-512x512.png">
   <link rel="stylesheet" href="style.css">
-  <style>
-    /* PWA Install Popup Styles */
-    .install-banner {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: var(--bg-secondary);
-      border-top: 2px solid var(--accent);
-      padding: 16px 20px;
-      z-index: 999;
-      display: none;
-      box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
-      animation: slideUp 0.4s ease;
-    }
-    .install-banner.show {
-      display: block;
-    }
-    @keyframes slideUp {
-      from { transform: translateY(100%); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-    .install-banner-content {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      max-width: 600px;
-      margin: 0 auto;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    .install-banner-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .install-banner-left .app-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      background: var(--bg-elevated);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 28px;
-    }
-    .install-banner-left .app-info h3 {
-      font-size: 1rem;
-      font-weight: 600;
-      margin: 0;
-      color: var(--text-primary);
-    }
-    .install-banner-left .app-info p {
-      font-size: 0.8rem;
-      color: var(--text-secondary);
-      margin: 0;
-    }
-    .install-banner-actions {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    .install-banner-actions .btn-install {
-      background: var(--accent);
-      color: white;
-      border: none;
-      padding: 8px 20px;
-      border-radius: 8px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-    .install-banner-actions .btn-install:hover {
-      transform: scale(1.05);
-      box-shadow: 0 2px 12px rgba(108, 140, 255, 0.4);
-    }
-    .install-banner-actions .btn-close-banner {
-      background: transparent;
-      border: none;
-      color: var(--text-secondary);
-      font-size: 20px;
-      cursor: pointer;
-      padding: 4px 8px;
-      border-radius: 6px;
-      transition: background 0.2s;
-    }
-    .install-banner-actions .btn-close-banner:hover {
-      background: var(--bg-elevated);
-    }
-    
-    /* Desktop view adjustments */
-    @media (min-width: 720px) {
-      .install-banner {
-        padding: 12px 24px;
-      }
-    }
-    @media (max-width: 480px) {
-      .install-banner-content {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-      }
-      .install-banner-left .app-icon {
-        width: 36px;
-        height: 36px;
-        font-size: 20px;
-      }
-      .install-banner-left .app-info h3 {
-        font-size: 0.9rem;
-      }
-      .install-banner-left .app-info p {
-        font-size: 0.7rem;
-      }
-      .install-banner-actions {
-        justify-content: flex-end;
-      }
-      .install-banner-actions .btn-install {
-        padding: 6px 16px;
-        font-size: 0.8rem;
-      }
-    }
-  </style>
 </head>
 <body>
   <div id="app">
     <!-- Top Bar -->
     <header class="app-header">
       <button id="menuToggle" class="hamburger" aria-label="Toggle sidebar">☰</button>
-      
+
       <!-- Logo -->
       <a href="#" class="app-logo" id="appLogo">
         <img src="icons/logo.png" alt="CodeReader" id="logoImg" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
         <span style="display:inline;">CodeReader</span>
         <span style="display:none;font-size:1.5rem;">📁</span>
       </a>
-      
+
       <div style="flex:1;"></div>
-      
+
       <div class="header-actions">
-        <!-- APK Button Removed - Only Theme and Fullscreen buttons -->
+        <!-- PWA Install / Open in App button (single control, state-driven) -->
+        <button id="pwaActionBtn" aria-label="Install app" style="display:none;background:transparent;border:none;color:var(--text-primary);font-size:20px;cursor:pointer;"></button>
         <button id="themeToggle" aria-label="Toggle theme">🌙</button>
         <button id="fullscreenToggle" aria-label="Fullscreen" style="background:transparent;border:none;color:var(--text-primary);font-size:20px;cursor:pointer;">⛶</button>
       </div>
@@ -175,7 +53,7 @@
             <label for="filePicker" class="picker-label">📄 Select File(s)</label>
             <input type="file" id="filePicker" multiple accept="*/*">
           </div>
-          
+
           <div id="fileStats" style="font-size:0.75rem;color:var(--text-secondary);padding:4px 0;margin-bottom:8px;"></div>
           <div id="fileList" class="file-list">
             <p class="placeholder">No files loaded</p>
@@ -197,22 +75,11 @@
     </div>
   </div>
 
-  <!-- PWA Install Banner -->
-  <div id="installBanner" class="install-banner">
-    <div class="install-banner-content">
-      <div class="install-banner-left">
-        <div class="app-icon">📁</div>
-        <div class="app-info">
-          <h3>CodeReader Pro</h3>
-          <p>Install app for offline use • Fast & Secure</p>
-        </div>
-      </div>
-      <div class="install-banner-actions">
-        <button id="installBtn" class="btn-install">📲 Install</button>
-        <button id="closeBannerBtn" class="btn-close-banner" aria-label="Close">✕</button>
-      </div>
-    </div>
-  </div>
+  <!-- Offline-capable file renderers (cache these in service-worker.js for true offline support) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
   <script src="script.js"></script>
   <script>

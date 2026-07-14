@@ -1,6 +1,10 @@
-// script.js – Complete file viewer with ALL file types opening inside app
+// script.js – Complete file viewer with ALL file types opening inside app (offline-capable)
 (function() {
   "use strict";
+
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
 
   // DOM refs
   const menuToggle = document.getElementById('menuToggle');
@@ -30,7 +34,7 @@
     '.log','.csv','.sql','.php','.rb','.go','.rs','.swift','.kt','.dart',
     '.vue','.jsx','.tsx','.scss','.less','.sass','.lua','.r','.pl','.pm'
   ];
-  
+
   const imageExtensions = ['.jpg','.jpeg','.png','.gif','.bmp','.webp','.ico','.tiff','.avif','.svg'];
   const videoExtensions = ['.mp4','.webm','.ogg','.mov','.avi','.mkv','.flv','.wmv','.m4v'];
   const audioExtensions = ['.mp3','.wav','.ogg','.aac','.flac','.m4a','.wma'];
@@ -88,8 +92,8 @@
 
   function isSupported(file) {
     const allExts = [
-      ...textExtensions, ...imageExtensions, ...videoExtensions, 
-      ...audioExtensions, ...pdfExtensions, ...docExtensions, 
+      ...textExtensions, ...imageExtensions, ...videoExtensions,
+      ...audioExtensions, ...pdfExtensions, ...docExtensions,
       ...pptExtensions, ...xlsExtensions, ...zipExtensions
     ];
     return allExts.some(e => file.name.toLowerCase().endsWith(e));
@@ -228,19 +232,19 @@
   function filterFiles(query) {
     const items = fileList.querySelectorAll('.file-item');
     const folders = fileList.querySelectorAll('.folder-item');
-    
+
     if (!query.trim()) {
       items.forEach(el => el.style.display = 'flex');
       folders.forEach(el => el.style.display = 'flex');
       return;
     }
-    
+
     const lowerQuery = query.toLowerCase();
     items.forEach(el => {
       const text = el.textContent.toLowerCase();
       el.style.display = text.includes(lowerQuery) ? 'flex' : 'none';
     });
-    
+
     folders.forEach(el => {
       const parent = el.parentElement;
       const children = parent.querySelectorAll('.file-item');
@@ -282,132 +286,261 @@
     fileStats.textContent = `${filtered.length} files loaded`;
   }
 
-  // ----- Helper: Convert data URL to Blob URL -----
-  function dataURLToBlobURL(dataUrl) {
-    return fetch(dataUrl)
-      .then(res => res.blob())
-      .then(blob => URL.createObjectURL(blob));
-  }
-
-  // ----- Helper: Show Office Document using multiple viewers -----
-  function showOfficeDocument(file, dataUrl, fileType) {
-    const fileTypeMap = {
-      'doc': { icon: '📝', label: 'Document' },
-      'ppt': { icon: '📊', label: 'Presentation' },
-      'xls': { icon: '📈', label: 'Spreadsheet' }
-    };
-    
-    const info = fileTypeMap[fileType] || { icon: '📎', label: 'File' };
-    
-    dataURLToBlobURL(dataUrl)
-      .then(blobUrl => {
-        const googleViewer = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(blobUrl)}`;
-        const msViewer = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(blobUrl)}`;
-        
-        codeContent.innerHTML = `
-          <div style="width:100%;height:100%;background:#f0f0f0;display:flex;flex-direction:column;padding:10px;">
-            <div style="display:flex;gap:10px;padding:8px;background:var(--bg-secondary);border-radius:8px;margin-bottom:8px;flex-wrap:wrap;">
-              <button id="viewerGoogleBtn" style="padding:6px 16px;background:var(--accent);color:white;border:none;border-radius:6px;cursor:pointer;font-size:0.8rem;">Google Viewer</button>
-              <button id="viewerMsBtn" style="padding:6px 16px;background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border-color);border-radius:6px;cursor:pointer;font-size:0.8rem;">Microsoft Viewer</button>
-              <button id="viewerDownloadBtn" style="padding:6px 16px;background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border-color);border-radius:6px;cursor:pointer;font-size:0.8rem;">📥 Download</button>
-            </div>
-            <div id="officeViewerFrame" style="flex:1;border-radius:8px;overflow:hidden;background:white;">
-              <iframe src="${googleViewer}" style="width:100%;height:100%;border:none;" allow="fullscreen"></iframe>
-            </div>
-          </div>
-        `;
-        
-        const googleBtn = document.getElementById('viewerGoogleBtn');
-        const msBtn = document.getElementById('viewerMsBtn');
-        const downloadBtn = document.getElementById('viewerDownloadBtn');
-        const frame = document.querySelector('#officeViewerFrame iframe');
-        
-        if (googleBtn) {
-          googleBtn.addEventListener('click', () => {
-            frame.src = googleViewer;
-            googleBtn.style.background = 'var(--accent)';
-            googleBtn.style.color = 'white';
-            msBtn.style.background = 'var(--bg-elevated)';
-            msBtn.style.color = 'var(--text-primary)';
-          });
-        }
-        
-        if (msBtn) {
-          msBtn.addEventListener('click', () => {
-            frame.src = msViewer;
-            msBtn.style.background = 'var(--accent)';
-            msBtn.style.color = 'white';
-            googleBtn.style.background = 'var(--bg-elevated)';
-            googleBtn.style.color = 'var(--text-primary)';
-          });
-        }
-        
-        if (downloadBtn) {
-          downloadBtn.addEventListener('click', () => {
-            window.downloadFileDirect(dataUrl, file.name);
-          });
-        }
-      })
-      .catch(() => {
-        showDownloadOption(file, dataUrl, info);
-      });
-  }
-
   // ----- Helper: Show Download Option -----
-  function showDownloadOption(file, dataUrl, info) {
+  function showDownloadOption(file, url, info) {
     codeContent.innerHTML = `
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:40px;gap:15px;background:var(--bg-primary);text-align:center;">
         <div style="font-size:4rem;">${info.icon}</div>
         <div style="font-size:1.3rem;font-weight:600;color:var(--text-primary);">${file.name}</div>
         <div style="color:var(--text-secondary);">${info.label} File (${formatSize(file.size)})</div>
         <div style="color:var(--text-secondary);font-size:0.9rem;max-width:400px;">
-          Preview not available. Please download to view.
+          Preview not available for this format. Please download to view.
         </div>
-        <button onclick="window.downloadFileDirect('${dataUrl}', '${file.name}')" style="padding:10px 24px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.95rem;font-weight:500;">
+        <button id="dlOptBtn" style="padding:10px 24px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.95rem;font-weight:500;">
           📥 Download File
         </button>
       </div>
     `;
+    const btn = document.getElementById('dlOptBtn');
+    if (btn) btn.addEventListener('click', () => window.downloadFileDirect(url, file.name));
   }
 
   // ----- Direct Download Function (Global) -----
-  window.downloadFileDirect = function(data, filename) {
-    fetch(data)
-      .then(res => res.blob())
-      .then(blob => {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-      })
-      .catch(() => {
-        const link = document.createElement('a');
-        link.href = data;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      });
+  window.downloadFileDirect = function(url, filename) {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  // ----- OPEN FILE - ALL TYPES INSIDE APP -----
+  // ----- PDF (pdf.js, fully offline once cached) -----
+  function renderPdf(file) {
+    codeContent.innerHTML = `<div class="empty-state">📄 Loading PDF...</div>`;
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const typedarray = new Uint8Array(e.target.result);
+        const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+        codeContent.innerHTML = `<div id="pdfWrap" style="width:100%;height:100%;overflow:auto;background:#525659;padding:14px;box-sizing:border-box;"></div>`;
+        const wrap = document.getElementById('pdfWrap');
+        for (let n = 1; n <= pdf.numPages; n++) {
+          const page = await pdf.getPage(n);
+          const viewport = page.getViewport({ scale: 1.4 });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          canvas.style.display = 'block';
+          canvas.style.margin = '0 auto 14px';
+          canvas.style.boxShadow = '0 2px 12px rgba(0,0,0,0.5)';
+          wrap.appendChild(canvas);
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        }
+      } catch (err) {
+        showDownloadOption(file, URL.createObjectURL(file), { icon: '📄', label: 'PDF' });
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  // ----- DOCX (mammoth.js) -----
+  function renderDocx(file) {
+    codeContent.innerHTML = `<div class="empty-state">📝 Loading document...</div>`;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      mammoth.convertToHtml({ arrayBuffer: e.target.result })
+        .then(result => {
+          codeContent.innerHTML = `
+            <div style="width:100%;height:100%;overflow:auto;background:white;color:#222;padding:30px;box-sizing:border-box;">
+              <div style="max-width:800px;margin:0 auto;line-height:1.6;">${result.value}</div>
+            </div>
+          `;
+        })
+        .catch(() => {
+          showDownloadOption(file, URL.createObjectURL(file), { icon: '📝', label: 'Document' });
+        });
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  // ----- RTF (basic control-word strip) -----
+  function renderRtf(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        let text = e.target.result
+          .replace(/\\par[d]?/g, '\n')
+          .replace(/\{\\\*?\\[^{}]+\}/g, '')
+          .replace(/\\[a-zA-Z]+-?\d* ?/g, '')
+          .replace(/[{}]/g, '')
+          .replace(/\\'\w{2}/g, '');
+        text = text.trim().replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        codeContent.innerHTML = `
+          <div style="width:100%;height:100%;overflow:auto;background:white;color:#222;padding:30px;box-sizing:border-box;">
+            <div style="max-width:800px;margin:0 auto;white-space:pre-wrap;line-height:1.6;">${text}</div>
+          </div>
+        `;
+      } catch (err) {
+        showDownloadOption(file, URL.createObjectURL(file), { icon: '📝', label: 'Document' });
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // ----- ODT/ODP (zip containing content.xml) -----
+  function renderOpenDocXml(file, label) {
+    codeContent.innerHTML = `<div class="empty-state">📝 Loading...</div>`;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      JSZip.loadAsync(e.target.result)
+        .then(zip => {
+          const entry = zip.file('content.xml');
+          if (!entry) throw new Error('content.xml not found');
+          return entry.async('text');
+        })
+        .then(xml => {
+          const doc = new DOMParser().parseFromString(xml, 'text/xml');
+          const text = (doc.documentElement ? doc.documentElement.textContent : '')
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;');
+          codeContent.innerHTML = `
+            <div style="width:100%;height:100%;overflow:auto;background:white;color:#222;padding:30px;box-sizing:border-box;">
+              <div style="max-width:800px;margin:0 auto;white-space:pre-wrap;line-height:1.6;">${text}</div>
+            </div>
+          `;
+        })
+        .catch(() => {
+          showDownloadOption(file, URL.createObjectURL(file), { icon: '📎', label: label });
+        });
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  // ----- PPTX (JSZip + slide text extraction) -----
+  function renderPptx(file) {
+    codeContent.innerHTML = `<div class="empty-state">📊 Loading presentation...</div>`;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      JSZip.loadAsync(e.target.result)
+        .then(zip => {
+          const slideFiles = Object.keys(zip.files)
+            .filter(n => /^ppt\/slides\/slide\d+\.xml$/.test(n))
+            .sort((a, b) => parseInt(a.match(/slide(\d+)\.xml/)[1]) - parseInt(b.match(/slide(\d+)\.xml/)[1]));
+          return Promise.all(slideFiles.map(f => zip.files[f].async('text')));
+        })
+        .then(slidesXml => {
+          let html = '';
+          slidesXml.forEach((xml, i) => {
+            const doc = new DOMParser().parseFromString(xml, 'text/xml');
+            const texts = Array.from(doc.getElementsByTagName('a:t')).map(n => n.textContent).filter(Boolean);
+            html += `
+              <div style="background:white;color:#222;border-radius:8px;padding:24px;margin-bottom:16px;max-width:800px;box-shadow:0 2px 10px rgba(0,0,0,0.3);">
+                <div style="font-size:0.75rem;color:#888;margin-bottom:10px;">Slide ${i + 1}</div>
+                ${texts.map(t => `<p style="margin:6px 0;">${t.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</p>`).join('') || '<p style="color:#999;">(No text content on this slide)</p>'}
+              </div>
+            `;
+          });
+          codeContent.innerHTML = `<div style="width:100%;height:100%;overflow:auto;background:var(--bg-primary);padding:20px;box-sizing:border-box;">${html}</div>`;
+        })
+        .catch(() => {
+          showDownloadOption(file, URL.createObjectURL(file), { icon: '📊', label: 'Presentation' });
+        });
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  // ----- XLS/XLSX/ODS (SheetJS) -----
+  function renderSpreadsheet(file) {
+    codeContent.innerHTML = `<div class="empty-state">📈 Loading spreadsheet...</div>`;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        let tabsHtml = '';
+        let sheetsHtml = '';
+        workbook.SheetNames.forEach((name, i) => {
+          const html = XLSX.utils.sheet_to_html(workbook.Sheets[name]);
+          tabsHtml += `<button class="sheet-tab" data-sheet="${i}" style="padding:6px 14px;border:none;background:${i === 0 ? 'var(--accent)' : 'var(--bg-elevated)'};color:${i === 0 ? 'white' : 'var(--text-primary)'};border-radius:6px;cursor:pointer;font-size:0.8rem;margin-right:6px;">${name}</button>`;
+          sheetsHtml += `<div class="sheet-pane" data-sheet="${i}" style="display:${i === 0 ? 'block' : 'none'};">${html}</div>`;
+        });
+        codeContent.innerHTML = `
+          <div style="width:100%;height:100%;overflow:auto;background:white;color:#222;padding:16px;box-sizing:border-box;">
+            <div style="margin-bottom:10px;">${tabsHtml}</div>
+            <div id="sheetPanes">${sheetsHtml}</div>
+          </div>
+        `;
+        codeContent.querySelectorAll('.sheet-tab').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const idx = btn.dataset.sheet;
+            codeContent.querySelectorAll('.sheet-tab').forEach(b => {
+              b.style.background = 'var(--bg-elevated)';
+              b.style.color = 'var(--text-primary)';
+            });
+            btn.style.background = 'var(--accent)';
+            btn.style.color = 'white';
+            codeContent.querySelectorAll('.sheet-pane').forEach(p => {
+              p.style.display = p.dataset.sheet === idx ? 'block' : 'none';
+            });
+          });
+        });
+      } catch (err) {
+        showDownloadOption(file, URL.createObjectURL(file), { icon: '📈', label: 'Spreadsheet' });
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  // ----- ZIP listing (JSZip; .rar/.7z/.gz fall back to download) -----
+  function renderZipListing(file) {
+    const lower = file.name.toLowerCase();
+    if (!lower.endsWith('.zip')) {
+      showDownloadOption(file, URL.createObjectURL(file), { icon: '📦', label: 'Archive' });
+      return;
+    }
+    codeContent.innerHTML = `<div class="empty-state">📦 Reading archive...</div>`;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      JSZip.loadAsync(e.target.result)
+        .then(zip => {
+          let rows = '';
+          Object.keys(zip.files).sort().forEach(name => {
+            const entry = zip.files[name];
+            const icon = entry.dir ? '📁' : '📄';
+            rows += `<div style="padding:6px 10px;border-bottom:1px solid var(--border-color);font-size:0.85rem;color:var(--text-primary);">${icon} ${name}</div>`;
+          });
+          codeContent.innerHTML = `
+            <div style="width:100%;height:100%;overflow:auto;background:var(--bg-primary);padding:16px;box-sizing:border-box;">
+              <div style="font-weight:600;margin-bottom:10px;color:var(--text-primary);">📦 ${file.name}</div>
+              <div style="background:var(--bg-elevated);border-radius:8px;overflow:hidden;">${rows}</div>
+              <button id="zipDlBtn" style="margin-top:14px;padding:10px 24px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;">📥 Download Archive</button>
+            </div>
+          `;
+          const btn = document.getElementById('zipDlBtn');
+          if (btn) btn.addEventListener('click', () => window.downloadFileDirect(URL.createObjectURL(file), file.name));
+        })
+        .catch(() => {
+          showDownloadOption(file, URL.createObjectURL(file), { icon: '📦', label: 'Archive' });
+        });
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  // ----- OPEN FILE - ALL TYPES INSIDE APP, FULLY OFFLINE -----
   function openFile(file) {
     if (!file) return;
     selectedFile = file;
     const fileNameDisplay = file.webkitRelativePath || file.name;
     fileName.textContent = fileNameDisplay;
     fileSize.textContent = formatSize(file.size);
-    
+
     const badgeText = getBadgeText(file);
     const badgeClass = getBadgeClass(file);
     fileTypeBadge.textContent = badgeText;
     fileTypeBadge.className = `file-type-badge ${badgeClass}`;
 
     const fileType = getFileType(file);
+    const lowerName = file.name.toLowerCase();
 
     // ---- IMAGE ----
     if (fileType === 'image') {
@@ -459,53 +592,49 @@
       return;
     }
 
-    // ---- PDF ----
+    // ---- PDF (client-side render, works offline & on mobile) ----
     if (fileType === 'pdf') {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target.result;
-        dataURLToBlobURL(dataUrl).then(blobUrl => {
-          codeContent.innerHTML = `
-            <div style="width:100%;height:100%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;padding:10px;">
-              <iframe src="${blobUrl}" style="width:100%;height:100%;border:none;border-radius:8px;background:white;" allow="fullscreen"></iframe>
-            </div>
-          `;
-        }).catch(() => {
-          showDownloadOption(file, dataUrl, { icon: '📄', label: 'PDF' });
-        });
-      };
-      reader.readAsDataURL(file);
+      renderPdf(file);
       return;
     }
 
-    // ---- WORD, EXCEL, PPT - Using Dual Viewer ----
-    if (['doc', 'ppt', 'xls'].includes(fileType)) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target.result;
-        showOfficeDocument(file, dataUrl, fileType);
-      };
-      reader.readAsDataURL(file);
+    // ---- WORD ----
+    if (fileType === 'doc') {
+      if (lowerName.endsWith('.docx')) {
+        renderDocx(file);
+      } else if (lowerName.endsWith('.odt')) {
+        renderOpenDocXml(file, 'Document');
+      } else if (lowerName.endsWith('.rtf')) {
+        renderRtf(file);
+      } else {
+        // legacy binary .doc has no reliable client-side parser
+        showDownloadOption(file, URL.createObjectURL(file), { icon: '📝', label: 'Document' });
+      }
       return;
     }
 
-    // ---- ZIP ----
+    // ---- PRESENTATION ----
+    if (fileType === 'ppt') {
+      if (lowerName.endsWith('.pptx')) {
+        renderPptx(file);
+      } else if (lowerName.endsWith('.odp')) {
+        renderOpenDocXml(file, 'Presentation');
+      } else {
+        // legacy binary .ppt has no reliable client-side parser
+        showDownloadOption(file, URL.createObjectURL(file), { icon: '📊', label: 'Presentation' });
+      }
+      return;
+    }
+
+    // ---- SPREADSHEET ----
+    if (fileType === 'xls') {
+      renderSpreadsheet(file);
+      return;
+    }
+
+    // ---- ZIP / ARCHIVE ----
     if (fileType === 'zip') {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const data = e.target.result;
-        codeContent.innerHTML = `
-          <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:40px;gap:20px;text-align:center;background:var(--bg-primary);">
-            <div style="font-size:4rem;">📦</div>
-            <div style="font-size:1.5rem;font-weight:600;color:var(--text-primary);">${file.name}</div>
-            <div style="color:var(--text-secondary);">Archive File (${formatSize(file.size)})</div>
-            <button onclick="window.downloadFileDirect('${data}', '${file.name}')" style="padding:10px 24px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;font-size:0.95rem;font-weight:500;">
-              📥 Download Archive
-            </button>
-          </div>
-        `;
-      };
-      reader.readAsDataURL(file);
+      renderZipListing(file);
       return;
     }
 
@@ -516,10 +645,10 @@
       const lines = content.split('\n');
       const maxLines = 10000;
       const displayLines = lines.slice(0, maxLines);
-      
+
       let html = '';
       const lineNumWidth = String(displayLines.length).length;
-      
+
       for (let i = 0; i < displayLines.length; i++) {
         const lineNum = String(i + 1).padStart(lineNumWidth, ' ');
         const lineContent = displayLines[i] || '';
@@ -529,7 +658,7 @@
           .replace(/>/g, '&gt;')
           .replace(/"/g, '&quot;')
           .replace(/'/g, '&#039;');
-        
+
         html += `
           <div class="line-container">
             <span class="line-number">${lineNum}</span>
@@ -537,7 +666,7 @@
           </div>
         `;
       }
-      
+
       if (lines.length > maxLines) {
         html += `
           <div class="line-container" style="opacity:0.6;font-style:italic;color:var(--text-secondary);padding-left:16px;">
@@ -546,7 +675,7 @@
           </div>
         `;
       }
-      
+
       codeContent.innerHTML = html;
       codeContent.scrollTop = 0;
     };
@@ -635,23 +764,25 @@
     <div class="empty-state">
       <div class="big-icon">📂</div>
       <div>Select a file to preview</div>
-      <div style="font-size:0.8rem;opacity:0.6;">Supports: PDF, DOC, PPT, XLS, Images, Videos, Audio & more</div>
+      <div style="font-size:0.8rem;opacity:0.6;">Supports: PDF, DOC, PPT, XLS, Images, Videos, Audio & more — fully offline</div>
     </div>
   `;
   fileList.innerHTML = `<p class="placeholder">📁 Select a folder or files to get started</p>`;
   fileStats.textContent = '0 files';
 
   console.log('📂 File Viewer Pro ready!');
-  console.log('✅ All files will open inside the app');
+  console.log('✅ All files render inside the app, no internet needed');
 
-  // ----- PWA INSTALLATION HANDLING (Only Native) -----
+  // ----- PWA INSTALL / OPEN-IN-APP NAVBAR BUTTON -----
+  // Single button, three states:
+  //  1. Running standalone (already the installed app)  -> button hidden
+  //  2. Not installed, browser can prompt install       -> "Install App"
+  //  3. Already installed but viewed in a normal browser -> "Open App" (best-effort)
   (function() {
     let deferredPrompt = null;
-    const installBanner = document.getElementById('installBanner');
-    const installBtn = document.getElementById('installBtn');
-    const closeBannerBtn = document.getElementById('closeBannerBtn');
+    const pwaBtn = document.getElementById('pwaActionBtn');
+    if (!pwaBtn) return;
 
-    // Check if app is already installed (standalone mode)
     function isAppInstalled() {
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
       const isFullscreen = window.matchMedia('(display-mode: fullscreen)').matches;
@@ -660,89 +791,87 @@
       return isStandalone || isFullscreen || isMinimalUi || isIOSStandalone;
     }
 
-    // Show install banner
-    function showInstallBanner() {
-      if (!isAppInstalled() && installBanner) {
-        const bannerDismissed = localStorage.getItem('pwa-banner-dismissed');
-        if (!bannerDismissed) {
-          setTimeout(() => {
-            installBanner.classList.add('show');
-          }, 1500);
-        }
+    function setButtonState(state) {
+      if (state === 'hidden') {
+        pwaBtn.style.display = 'none';
+      } else if (state === 'install') {
+        pwaBtn.style.display = 'inline-block';
+        pwaBtn.textContent = '📲';
+        pwaBtn.setAttribute('aria-label', 'Install app');
+        pwaBtn.title = 'Install App';
+      } else if (state === 'open') {
+        pwaBtn.style.display = 'inline-block';
+        pwaBtn.textContent = '↗️';
+        pwaBtn.setAttribute('aria-label', 'Open in app');
+        pwaBtn.title = 'Open in App';
       }
     }
 
-    // Handle install prompt
+    function refreshButton() {
+      if (isAppInstalled()) {
+        // Running as the installed app itself -> no button at all
+        setButtonState('hidden');
+        localStorage.setItem('pwa-installed', 'true');
+        return;
+      }
+      if (deferredPrompt) {
+        setButtonState('install');
+      } else if (localStorage.getItem('pwa-installed') === 'true') {
+        setButtonState('open');
+      } else {
+        setButtonState('hidden');
+      }
+    }
+
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      showInstallBanner();
-      console.log('✅ beforeinstallprompt event fired');
+      refreshButton();
     });
 
-    // Handle install button click
-    if (installBtn) {
-      installBtn.addEventListener('click', async () => {
-        if (deferredPrompt) {
-          deferredPrompt.prompt();
-          const choiceResult = await deferredPrompt.userChoice;
-          if (choiceResult.outcome === 'accepted') {
-            console.log('✅ User accepted the install prompt');
-            if (installBanner) installBanner.classList.remove('show');
-            localStorage.setItem('pwa-installed', 'true');
-          } else {
-            console.log('❌ User dismissed the install prompt');
-          }
-          deferredPrompt = null;
-        } else {
-          // Fallback for browsers without beforeinstallprompt
-          alert('Please use your browser\'s "Add to Home Screen" option to install the app.');
+    pwaBtn.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const choice = await deferredPrompt.userChoice;
+        if (choice.outcome === 'accepted') {
+          localStorage.setItem('pwa-installed', 'true');
         }
-      });
-    }
-
-    // Close banner
-    if (closeBannerBtn) {
-      closeBannerBtn.addEventListener('click', () => {
-        if (installBanner) {
-          installBanner.classList.remove('show');
-          localStorage.setItem('pwa-banner-dismissed', 'true');
+        deferredPrompt = null;
+        refreshButton();
+      } else if (localStorage.getItem('pwa-installed') === 'true') {
+        // Best-effort only: no browser exposes a universal JS API to force-launch
+        // an already-installed PWA from a normal browser tab. We try a related-apps
+        // check (Chrome/Android) and otherwise just guide the user.
+        if ('getInstalledRelatedApps' in navigator) {
+          try {
+            const related = await navigator.getInstalledRelatedApps();
+            if (related && related.length > 0) {
+              alert('App pehle se installed hai. Apne home screen / app drawer se "CodeReader Pro" icon par tap karke usse kholein.');
+              return;
+            }
+          } catch (err) {}
         }
-      });
-    }
-
-    // App installed event
-    window.addEventListener('appinstalled', () => {
-      console.log('✅ App installed successfully!');
-      if (installBanner) installBanner.classList.remove('show');
-      localStorage.setItem('pwa-installed', 'true');
-    });
-
-    // Check on load
-    document.addEventListener('DOMContentLoaded', () => {
-      if (isAppInstalled()) {
-        localStorage.setItem('pwa-installed', 'true');
-        if (installBanner) installBanner.classList.remove('show');
+        alert('App pehle se installed hai. Apne home screen se "CodeReader Pro" icon par tap karke usse kholein.');
       } else {
-        const previouslyInstalled = localStorage.getItem('pwa-installed');
-        const bannerDismissed = localStorage.getItem('pwa-banner-dismissed');
-        if (!previouslyInstalled && !bannerDismissed) {
-          setTimeout(() => showInstallBanner(), 2000);
-        }
+        alert('Is browser mein automatic install available nahi hai. Browser menu se "Add to Home Screen" option use karein.');
       }
     });
 
-    // Handle display-mode change
-    const displayModeMedia = window.matchMedia('(display-mode: standalone)');
-    displayModeMedia.addEventListener('change', (e) => {
+    window.addEventListener('appinstalled', () => {
+      localStorage.setItem('pwa-installed', 'true');
+      deferredPrompt = null;
+      refreshButton();
+    });
+
+    window.matchMedia('(display-mode: standalone)').addEventListener('change', (e) => {
       if (e.matches) {
-        console.log('✅ App switched to standalone mode');
-        if (installBanner) installBanner.classList.remove('show');
         localStorage.setItem('pwa-installed', 'true');
       }
+      refreshButton();
     });
 
-    console.log('📱 PWA Installation Handling initialized (Native only)');
+    document.addEventListener('DOMContentLoaded', refreshButton);
+    refreshButton();
   })();
 
 })();
