@@ -299,16 +299,11 @@
     
     const info = fileTypeMap[fileType] || { icon: '📎', label: 'File' };
     
-    // Try to convert to blob URL and use viewers
     dataURLToBlobURL(dataUrl)
       .then(blobUrl => {
-        // Try Google Docs Viewer first (more reliable)
         const googleViewer = `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(blobUrl)}`;
-        
-        // Try Microsoft Office Viewer as fallback
         const msViewer = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(blobUrl)}`;
         
-        // Create viewer with both options
         codeContent.innerHTML = `
           <div style="width:100%;height:100%;background:#f0f0f0;display:flex;flex-direction:column;padding:10px;">
             <div style="display:flex;gap:10px;padding:8px;background:var(--bg-secondary);border-radius:8px;margin-bottom:8px;flex-wrap:wrap;">
@@ -322,7 +317,6 @@
           </div>
         `;
         
-        // Add button functionality
         const googleBtn = document.getElementById('viewerGoogleBtn');
         const msBtn = document.getElementById('viewerMsBtn');
         const downloadBtn = document.getElementById('viewerDownloadBtn');
@@ -355,7 +349,6 @@
         }
       })
       .catch(() => {
-        // Fallback: Show download option
         showDownloadOption(file, dataUrl, info);
       });
   }
@@ -651,196 +644,39 @@
   console.log('📂 File Viewer Pro ready!');
   console.log('✅ All files will open inside the app');
 
-  // ----- DIRECT APK DOWNLOAD (No PWA, No Browser) -----
-  (function() {
-    const downloadBtn = document.getElementById('downloadApkBtn');
-    const downloadModal = document.getElementById('downloadModal');
-    const modalCloseBtn = document.getElementById('modalCloseBtn');
-    const directDownloadLink = document.getElementById('directDownloadLink');
-    
-    // APK file path - Direct download link
-    const APK_FILE_PATH = 'CodeReader.apk';
-
-    // Function to download APK directly
-    function downloadAPK() {
-      // Create an invisible anchor tag
-      const link = document.createElement('a');
-      link.href = APK_FILE_PATH;
-      link.download = 'CodeReader.apk';
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      
-      // Trigger download
-      link.click();
-      
-      // Clean up
-      setTimeout(() => {
-        document.body.removeChild(link);
-      }, 1000);
-      
-      console.log('📱 APK Download started');
-    }
-
-    // Check if APK exists before showing modal
-    function checkAPKExists() {
-      fetch(APK_FILE_PATH, { method: 'HEAD' })
-        .then(response => {
-          if (response.ok) {
-            // APK exists - Enable direct download
-            if (directDownloadLink) {
-              directDownloadLink.href = '#';
-              directDownloadLink.textContent = '⬇️ Download APK';
-              directDownloadLink.onclick = function(e) {
-                e.preventDefault();
-                downloadAPK();
-                closeModal();
-              };
-            }
-            console.log('✅ APK file found');
-          } else {
-            // APK not found - Show alternative
-            if (directDownloadLink) {
-              directDownloadLink.href = '#';
-              directDownloadLink.textContent = '🔗 Generate APK Online';
-              directDownloadLink.onclick = function(e) {
-                e.preventDefault();
-                window.open('https://www.pwabuilder.com', '_blank');
-                closeModal();
-              };
-            }
-            console.log('⚠️ APK file not found');
-          }
-        })
-        .catch(() => {
-          // Fetch failed - Show alternative
-          if (directDownloadLink) {
-            directDownloadLink.href = '#';
-            directDownloadLink.textContent = '🔗 Generate APK Online';
-            directDownloadLink.onclick = function(e) {
-              e.preventDefault();
-              window.open('https://www.pwabuilder.com', '_blank');
-              closeModal();
-            };
-          }
-          console.log('⚠️ APK fetch failed');
-        });
-    }
-
-    // Show modal on download button click
-    if (downloadBtn) {
-      downloadBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        // First try to download directly (if APK exists)
-        fetch(APK_FILE_PATH, { method: 'HEAD' })
-          .then(response => {
-            if (response.ok) {
-              // APK exists - Download directly without modal
-              downloadAPK();
-            } else {
-              // APK not found - Show modal with options
-              downloadModal.classList.add('active');
-              checkAPKExists();
-            }
-          })
-          .catch(() => {
-            // Show modal with options
-            downloadModal.classList.add('active');
-            checkAPKExists();
-          });
-      });
-    }
-
-    // Close modal
-    function closeModal() {
-      downloadModal.classList.remove('active');
-    }
-
-    if (modalCloseBtn) {
-      modalCloseBtn.addEventListener('click', closeModal);
-    }
-
-    downloadModal.addEventListener('click', (e) => {
-      if (e.target === downloadModal) {
-        closeModal();
-      }
-    });
-
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && downloadModal.classList.contains('active')) {
-        closeModal();
-      }
-    });
-
-    console.log('📱 Direct APK Download feature added!');
-  })();
-
-
-
-
-// Add this at the end of your script.js file, before the final closing })
-
-  // ----- PWA INSTALLATION HANDLING -----
+  // ----- PWA INSTALLATION HANDLING (Only Native) -----
   (function() {
     let deferredPrompt = null;
     const installBanner = document.getElementById('installBanner');
     const installBtn = document.getElementById('installBtn');
     const closeBannerBtn = document.getElementById('closeBannerBtn');
-    const downloadApkBtn = document.getElementById('downloadApkBtn');
 
     // Check if app is already installed (standalone mode)
     function isAppInstalled() {
-      // Check if running in standalone mode (PWA installed)
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
       const isFullscreen = window.matchMedia('(display-mode: fullscreen)').matches;
       const isMinimalUi = window.matchMedia('(display-mode: minimal-ui)').matches;
-      
-      // Also check if navigator.standalone is true (iOS)
       const isIOSStandalone = window.navigator.standalone === true;
-      
       return isStandalone || isFullscreen || isMinimalUi || isIOSStandalone;
-    }
-
-    // Hide download APK button if app is already installed
-    function checkAndHideDownloadButton() {
-      if (isAppInstalled()) {
-        if (downloadApkBtn) {
-          downloadApkBtn.classList.add('hidden');
-        }
-        // Also hide the install banner
-        if (installBanner) {
-          installBanner.classList.remove('show');
-        }
-        console.log('✅ App is already installed - Download button hidden');
-        return true;
-      }
-      return false;
     }
 
     // Show install banner
     function showInstallBanner() {
       if (!isAppInstalled() && installBanner) {
-        // Check if user has dismissed the banner before
         const bannerDismissed = localStorage.getItem('pwa-banner-dismissed');
         if (!bannerDismissed) {
           setTimeout(() => {
             installBanner.classList.add('show');
-          }, 1500); // Show after 1.5 seconds
+          }, 1500);
         }
       }
     }
 
     // Handle install prompt
     window.addEventListener('beforeinstallprompt', (e) => {
-      // Prevent Chrome 67+ from automatically showing the prompt
       e.preventDefault();
-      // Stash the event so it can be triggered later
       deferredPrompt = e;
-      
-      // Show install banner
       showInstallBanner();
-      
       console.log('✅ beforeinstallprompt event fired');
     });
 
@@ -848,29 +684,18 @@
     if (installBtn) {
       installBtn.addEventListener('click', async () => {
         if (deferredPrompt) {
-          // Show the install prompt
           deferredPrompt.prompt();
-          
-          // Wait for the user to respond to the prompt
           const choiceResult = await deferredPrompt.userChoice;
-          
           if (choiceResult.outcome === 'accepted') {
             console.log('✅ User accepted the install prompt');
-            // Hide banner and download button
             if (installBanner) installBanner.classList.remove('show');
-            if (downloadApkBtn) downloadApkBtn.classList.add('hidden');
             localStorage.setItem('pwa-installed', 'true');
           } else {
             console.log('❌ User dismissed the install prompt');
           }
-          
-          // Clear the deferred prompt
           deferredPrompt = null;
         } else {
-          // If no deferredPrompt, try to use the native install
-          // For some browsers, we can try to open the install page
-          console.log('ℹ️ No deferred prompt available');
-          // Show a message or fallback
+          // Fallback for browsers without beforeinstallprompt
           alert('Please use your browser\'s "Add to Home Screen" option to install the app.');
         }
       });
@@ -881,61 +706,43 @@
       closeBannerBtn.addEventListener('click', () => {
         if (installBanner) {
           installBanner.classList.remove('show');
-          // Remember that user dismissed the banner
           localStorage.setItem('pwa-banner-dismissed', 'true');
         }
       });
     }
 
-    // Check when app is installed via the prompt
+    // App installed event
     window.addEventListener('appinstalled', () => {
       console.log('✅ App installed successfully!');
       if (installBanner) installBanner.classList.remove('show');
-      if (downloadApkBtn) downloadApkBtn.classList.add('hidden');
       localStorage.setItem('pwa-installed', 'true');
     });
 
-    // Check on load if app is already installed
+    // Check on load
     document.addEventListener('DOMContentLoaded', () => {
-      // Check if app is installed
-      const isInstalled = checkAndHideDownloadButton();
-      
-      // If not installed, try to show banner after a delay
-      if (!isInstalled) {
-        // Check if user has installed before via localStorage
+      if (isAppInstalled()) {
+        localStorage.setItem('pwa-installed', 'true');
+        if (installBanner) installBanner.classList.remove('show');
+      } else {
         const previouslyInstalled = localStorage.getItem('pwa-installed');
-        if (!previouslyInstalled) {
-          // Show banner if not installed and not dismissed
-          const bannerDismissed = localStorage.getItem('pwa-banner-dismissed');
-          if (!bannerDismissed) {
-            setTimeout(() => {
-              showInstallBanner();
-            }, 2000);
-          }
+        const bannerDismissed = localStorage.getItem('pwa-banner-dismissed');
+        if (!previouslyInstalled && !bannerDismissed) {
+          setTimeout(() => showInstallBanner(), 2000);
         }
       }
     });
 
-    // Handle display-mode change (e.g., user installs from browser menu)
+    // Handle display-mode change
     const displayModeMedia = window.matchMedia('(display-mode: standalone)');
     displayModeMedia.addEventListener('change', (e) => {
       if (e.matches) {
-        // User switched to standalone mode
         console.log('✅ App switched to standalone mode');
-        if (downloadApkBtn) downloadApkBtn.classList.add('hidden');
         if (installBanner) installBanner.classList.remove('show');
         localStorage.setItem('pwa-installed', 'true');
       }
     });
 
-    // Also check on page visibility change (when user returns to app)
-    document.addEventListener('visibilitychange', () => {
-      if (!document.hidden) {
-        checkAndHideDownloadButton();
-      }
-    });
-
-    console.log('📱 PWA Installation Handling initialized');
+    console.log('📱 PWA Installation Handling initialized (Native only)');
   })();
 
-})(); // End of main IIFE
+})();

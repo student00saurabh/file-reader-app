@@ -104,11 +104,6 @@
       background: var(--bg-elevated);
     }
     
-    /* Hide download APK button when app is installed */
-    .download-apk-btn.hidden {
-      display: none !important;
-    }
-    
     /* Desktop view adjustments */
     @media (min-width: 720px) {
       .install-banner {
@@ -158,11 +153,7 @@
       <div style="flex:1;"></div>
       
       <div class="header-actions">
-        <!-- Download APK Button (Hidden if app installed) -->
-        <button id="downloadApkBtn" class="download-apk-btn" title="Download APK">
-          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M5 20h14v-2H5v2zm7-18L5.33 9h3.84v4h3.66V9h3.84L12 2z" transform="rotate(180,12,12)" fill="white"/></svg>
-          <span>APK</span>
-        </button>
+        <!-- APK Button Removed - Only Theme and Fullscreen buttons -->
         <button id="themeToggle" aria-label="Toggle theme">🌙</button>
         <button id="fullscreenToggle" aria-label="Fullscreen" style="background:transparent;border:none;color:var(--text-primary);font-size:20px;cursor:pointer;">⛶</button>
       </div>
@@ -222,22 +213,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Download Modal -->
-  <!-- <div id="downloadModal" class="download-modal">
-    <div class="download-modal-content">
-      <div class="modal-icon">📱</div>
-      <h2>Download CodeReader APK</h2>
-      <p>Get the offline Android app for a better experience. Supports all file types: PDF, DOC, PPT, Images, Videos & more!</p>
-      <div class="btn-group">
-        <a href="#" id="directDownloadLink" class="btn-primary" download>⬇️ Download APK</a>
-        <button id="modalCloseBtn" class="btn-secondary">Close</button>
-      </div>
-      <div style="margin-top:12px;font-size:0.7rem;color:var(--text-secondary);text-align:center;">
-        Version 2.0 • Size: ~4.5 MB • Works offline
-      </div>
-    </div>
-  </div> -->
 
   <script src="script.js"></script>
   <script>
