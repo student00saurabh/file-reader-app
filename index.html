@@ -13,6 +13,134 @@
   <link rel="icon" type="image/png" sizes="192x192" href="icons/android-chrome-192x192.png">
   <link rel="icon" type="image/png" sizes="512x512" href="icons/android-chrome-512x512.png">
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* PWA Install Popup Styles */
+    .install-banner {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-secondary);
+      border-top: 2px solid var(--accent);
+      padding: 16px 20px;
+      z-index: 999;
+      display: none;
+      box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+      animation: slideUp 0.4s ease;
+    }
+    .install-banner.show {
+      display: block;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .install-banner-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: 600px;
+      margin: 0 auto;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .install-banner-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .install-banner-left .app-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: var(--bg-elevated);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+    .install-banner-left .app-info h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin: 0;
+      color: var(--text-primary);
+    }
+    .install-banner-left .app-info p {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin: 0;
+    }
+    .install-banner-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .install-banner-actions .btn-install {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .install-banner-actions .btn-install:hover {
+      transform: scale(1.05);
+      box-shadow: 0 2px 12px rgba(108, 140, 255, 0.4);
+    }
+    .install-banner-actions .btn-close-banner {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: background 0.2s;
+    }
+    .install-banner-actions .btn-close-banner:hover {
+      background: var(--bg-elevated);
+    }
+    
+    /* Hide download APK button when app is installed */
+    .download-apk-btn.hidden {
+      display: none !important;
+    }
+    
+    /* Desktop view adjustments */
+    @media (min-width: 720px) {
+      .install-banner {
+        padding: 12px 24px;
+      }
+    }
+    @media (max-width: 480px) {
+      .install-banner-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      .install-banner-left .app-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 20px;
+      }
+      .install-banner-left .app-info h3 {
+        font-size: 0.9rem;
+      }
+      .install-banner-left .app-info p {
+        font-size: 0.7rem;
+      }
+      .install-banner-actions {
+        justify-content: flex-end;
+      }
+      .install-banner-actions .btn-install {
+        padding: 6px 16px;
+        font-size: 0.8rem;
+      }
+    }
+  </style>
 </head>
 <body>
   <div id="app">
@@ -30,7 +158,7 @@
       <div style="flex:1;"></div>
       
       <div class="header-actions">
-        <!-- Download APK Button -->
+        <!-- Download APK Button (Hidden if app installed) -->
         <button id="downloadApkBtn" class="download-apk-btn" title="Download APK">
           <svg viewBox="0 0 24 24" width="16" height="16"><path d="M5 20h14v-2H5v2zm7-18L5.33 9h3.84v4h3.66V9h3.84L12 2z" transform="rotate(180,12,12)" fill="white"/></svg>
           <span>APK</span>
@@ -57,17 +185,6 @@
             <input type="file" id="filePicker" multiple accept="*/*">
           </div>
           
-          <!-- Android Fallback -->
-          <!-- <div class="android-fallback" id="androidFallback">
-            <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:8px;">
-              📱 Android mode: Select files individually
-            </p>
-            <div class="file-input-wrapper">
-              <label for="androidFilePicker">Select File if above selectors are not working</label>
-              <input type="file" name="androidFilePicker" id="androidFilePicker" multiple accept="*/*">
-            </div>
-          </div> -->
-          
           <div id="fileStats" style="font-size:0.75rem;color:var(--text-secondary);padding:4px 0;margin-bottom:8px;"></div>
           <div id="fileList" class="file-list">
             <p class="placeholder">No files loaded</p>
@@ -89,8 +206,25 @@
     </div>
   </div>
 
+  <!-- PWA Install Banner -->
+  <div id="installBanner" class="install-banner">
+    <div class="install-banner-content">
+      <div class="install-banner-left">
+        <div class="app-icon">📁</div>
+        <div class="app-info">
+          <h3>CodeReader Pro</h3>
+          <p>Install app for offline use • Fast & Secure</p>
+        </div>
+      </div>
+      <div class="install-banner-actions">
+        <button id="installBtn" class="btn-install">📲 Install</button>
+        <button id="closeBannerBtn" class="btn-close-banner" aria-label="Close">✕</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Download Modal -->
-  <div id="downloadModal" class="download-modal">
+  <!-- <div id="downloadModal" class="download-modal">
     <div class="download-modal-content">
       <div class="modal-icon">📱</div>
       <h2>Download CodeReader APK</h2>
@@ -103,7 +237,7 @@
         Version 2.0 • Size: ~4.5 MB • Works offline
       </div>
     </div>
-  </div>
+  </div> -->
 
   <script src="script.js"></script>
   <script>

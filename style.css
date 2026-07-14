@@ -271,7 +271,6 @@ input[type="file"]::file-selector-button:hover {
   display: flex;
   align-items: center;
   gap: 6px;
-  user-select: none;
 }
 
 .folder-item:hover, .file-item:hover {
@@ -395,7 +394,6 @@ input[type="file"]::file-selector-button:hover {
   text-align: right;
   padding-right: 16px;
   color: var(--line-number-color);
-  user-select: none;
   flex-shrink: 0;
   font-size: 0.8rem;
   opacity: 0.7;
@@ -480,7 +478,6 @@ input[type="file"]::file-selector-button:hover {
   right: 0;
   bottom: 0;
   background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(8px);
   z-index: 1000;
   align-items: center;
   justify-content: center;
@@ -696,6 +693,147 @@ input[type="file"]::file-selector-button:hover {
   .download-modal-content .btn-group button {
     min-width: 80px;
     padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+}
+
+/* PWA Install Banner Styles - Add these at the end of style.css */
+
+.install-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-secondary);
+  border-top: 2px solid var(--accent);
+  padding: 16px 20px;
+  z-index: 999;
+  display: none;
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+  animation: slideUp 0.4s ease;
+}
+
+.install-banner.show {
+  display: block;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.install-banner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 600px;
+  margin: 0 auto;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.install-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.install-banner-left .app-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+
+.install-banner-left .app-info h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.install-banner-left .app-info p {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.install-banner-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.install-banner-actions .btn-install {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.install-banner-actions .btn-install:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 12px rgba(108, 140, 255, 0.4);
+}
+
+.install-banner-actions .btn-close-banner {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.install-banner-actions .btn-close-banner:hover {
+  background: var(--bg-elevated);
+}
+
+/* Hide download APK button when app is installed */
+.download-apk-btn.hidden {
+  display: none !important;
+}
+
+/* Desktop view adjustments */
+@media (min-width: 720px) {
+  .install-banner {
+    padding: 12px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .install-banner-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .install-banner-left .app-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+  }
+  .install-banner-left .app-info h3 {
+    font-size: 0.9rem;
+  }
+  .install-banner-left .app-info p {
+    font-size: 0.7rem;
+  }
+  .install-banner-actions {
+    justify-content: flex-end;
+  }
+  .install-banner-actions .btn-install {
+    padding: 6px 16px;
     font-size: 0.8rem;
   }
 }

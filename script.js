@@ -776,4 +776,166 @@
     console.log('📱 Direct APK Download feature added!');
   })();
 
-})();
+
+
+
+// Add this at the end of your script.js file, before the final closing })
+
+  // ----- PWA INSTALLATION HANDLING -----
+  (function() {
+    let deferredPrompt = null;
+    const installBanner = document.getElementById('installBanner');
+    const installBtn = document.getElementById('installBtn');
+    const closeBannerBtn = document.getElementById('closeBannerBtn');
+    const downloadApkBtn = document.getElementById('downloadApkBtn');
+
+    // Check if app is already installed (standalone mode)
+    function isAppInstalled() {
+      // Check if running in standalone mode (PWA installed)
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      const isFullscreen = window.matchMedia('(display-mode: fullscreen)').matches;
+      const isMinimalUi = window.matchMedia('(display-mode: minimal-ui)').matches;
+      
+      // Also check if navigator.standalone is true (iOS)
+      const isIOSStandalone = window.navigator.standalone === true;
+      
+      return isStandalone || isFullscreen || isMinimalUi || isIOSStandalone;
+    }
+
+    // Hide download APK button if app is already installed
+    function checkAndHideDownloadButton() {
+      if (isAppInstalled()) {
+        if (downloadApkBtn) {
+          downloadApkBtn.classList.add('hidden');
+        }
+        // Also hide the install banner
+        if (installBanner) {
+          installBanner.classList.remove('show');
+        }
+        console.log('✅ App is already installed - Download button hidden');
+        return true;
+      }
+      return false;
+    }
+
+    // Show install banner
+    function showInstallBanner() {
+      if (!isAppInstalled() && installBanner) {
+        // Check if user has dismissed the banner before
+        const bannerDismissed = localStorage.getItem('pwa-banner-dismissed');
+        if (!bannerDismissed) {
+          setTimeout(() => {
+            installBanner.classList.add('show');
+          }, 1500); // Show after 1.5 seconds
+        }
+      }
+    }
+
+    // Handle install prompt
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevent Chrome 67+ from automatically showing the prompt
+      e.preventDefault();
+      // Stash the event so it can be triggered later
+      deferredPrompt = e;
+      
+      // Show install banner
+      showInstallBanner();
+      
+      console.log('✅ beforeinstallprompt event fired');
+    });
+
+    // Handle install button click
+    if (installBtn) {
+      installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          // Show the install prompt
+          deferredPrompt.prompt();
+          
+          // Wait for the user to respond to the prompt
+          const choiceResult = await deferredPrompt.userChoice;
+          
+          if (choiceResult.outcome === 'accepted') {
+            console.log('✅ User accepted the install prompt');
+            // Hide banner and download button
+            if (installBanner) installBanner.classList.remove('show');
+            if (downloadApkBtn) downloadApkBtn.classList.add('hidden');
+            localStorage.setItem('pwa-installed', 'true');
+          } else {
+            console.log('❌ User dismissed the install prompt');
+          }
+          
+          // Clear the deferred prompt
+          deferredPrompt = null;
+        } else {
+          // If no deferredPrompt, try to use the native install
+          // For some browsers, we can try to open the install page
+          console.log('ℹ️ No deferred prompt available');
+          // Show a message or fallback
+          alert('Please use your browser\'s "Add to Home Screen" option to install the app.');
+        }
+      });
+    }
+
+    // Close banner
+    if (closeBannerBtn) {
+      closeBannerBtn.addEventListener('click', () => {
+        if (installBanner) {
+          installBanner.classList.remove('show');
+          // Remember that user dismissed the banner
+          localStorage.setItem('pwa-banner-dismissed', 'true');
+        }
+      });
+    }
+
+    // Check when app is installed via the prompt
+    window.addEventListener('appinstalled', () => {
+      console.log('✅ App installed successfully!');
+      if (installBanner) installBanner.classList.remove('show');
+      if (downloadApkBtn) downloadApkBtn.classList.add('hidden');
+      localStorage.setItem('pwa-installed', 'true');
+    });
+
+    // Check on load if app is already installed
+    document.addEventListener('DOMContentLoaded', () => {
+      // Check if app is installed
+      const isInstalled = checkAndHideDownloadButton();
+      
+      // If not installed, try to show banner after a delay
+      if (!isInstalled) {
+        // Check if user has installed before via localStorage
+        const previouslyInstalled = localStorage.getItem('pwa-installed');
+        if (!previouslyInstalled) {
+          // Show banner if not installed and not dismissed
+          const bannerDismissed = localStorage.getItem('pwa-banner-dismissed');
+          if (!bannerDismissed) {
+            setTimeout(() => {
+              showInstallBanner();
+            }, 2000);
+          }
+        }
+      }
+    });
+
+    // Handle display-mode change (e.g., user installs from browser menu)
+    const displayModeMedia = window.matchMedia('(display-mode: standalone)');
+    displayModeMedia.addEventListener('change', (e) => {
+      if (e.matches) {
+        // User switched to standalone mode
+        console.log('✅ App switched to standalone mode');
+        if (downloadApkBtn) downloadApkBtn.classList.add('hidden');
+        if (installBanner) installBanner.classList.remove('show');
+        localStorage.setItem('pwa-installed', 'true');
+      }
+    });
+
+    // Also check on page visibility change (when user returns to app)
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        checkAndHideDownloadButton();
+      }
+    });
+
+    console.log('📱 PWA Installation Handling initialized');
+  })();
+
+})(); // End of main IIFE
